@@ -1,0 +1,72 @@
+name: Test, build and push to Docker Hub
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # 1. Run automationTesting.py against the app started directly with uvicorn
+  test:
+    name: Automation tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-test.txt
+
+      - name: Start the API in the background
+        run: uvicorn main:app --host 0.0.0.0 --port 8000 &
+        env:
+          DATABASE_PATH: ci-students.db
+
+      - name: Run automationTesting.py
+        run: python automationTesting.py
+
+  # 2. Build the image, test the running container, then push it (only on main)
+  build-and-push:
+    name: Build, smoke-test and push image
+    needs: test                      # runs only if all tests passed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t student-management-api:ci .
+
+      - name: Run container and test it
+        run: |
+          docker run -d --name api-ci -p 8000:8000 student-management-api:ci
+          pip install -r requirements-test.txt
+          python automationTesting.py
+
+      - name: Show container logs
+        if: always()
+        run: docker logs api-ci || true
+
+      - name: Login to Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: echo "${{ secrets.DOCKERTOKEN }}" | docker login -u "${{ secrets.DOCKERUSERNAME }}" --password-stdin
+
+      - name: Tag and push image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          IMAGE="${{ secrets.DOCKERUSERNAME }}/student-management-api"
+          docker tag student-management-api:ci "$IMAGE:latest"
+          docker tag student-management-api:ci "$IMAGE:sha-${GITHUB_SHA::7}"
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:sha-${GITHUB_SHA::7}"
+          echo "Pushed $IMAGE:latest and $IMAGE:sha-${GITHUB_SHA::7}"

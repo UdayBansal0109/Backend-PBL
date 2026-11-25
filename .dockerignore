@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.git/
+.github/
+.env
+*.db
+data/
+automationTesting.py
+requirements-test.txt
+README.md

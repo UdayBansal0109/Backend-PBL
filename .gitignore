@@ -1,0 +1,19 @@
+# Secrets and local configuration
+.env
+
+# Python caches and virtual environments
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Local SQLite database and Docker volume data
+*.db
+data/
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

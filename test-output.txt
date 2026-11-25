@@ -1,0 +1,34 @@
+===== 1. Local run (uvicorn) =====
+Testing http://localhost:8000
+PASS  test_root
+PASS  test_health
+PASS  test_full_crud_flow
+PASS  test_duplicate_email_returns_409
+PASS  test_invalid_data_returns_422
+PASS  test_missing_student_returns_404
+
+6/6 tests passed
+
+
+===== 2. docker compose up -d --build =====
+student-api local/student-management-api:latest Up 6 seconds (health: starting)
+Testing http://localhost:8000
+PASS  test_root
+PASS  test_health
+PASS  test_full_crud_flow
+PASS  test_duplicate_email_returns_409
+PASS  test_invalid_data_returns_422
+PASS  test_missing_student_returns_404
+
+6/6 tests passed
+
+===== 3. Data survives a restart (named volume) =====
+{"name":"Diya","email":"diya.volume@example.com","course":"DevOps","id":3}
+after restart: diya.volume@example.com
+student-api Up 16 seconds (healthy)
+
+===== 4. Structured logs =====
+student-api  | 2026-11-25 07:28:08,995 INFO method=DELETE path=/students/999999 status=404 duration_ms=2.07
+student-api  | 2026-11-25 07:28:09,179 INFO method=POST path=/students status=201 duration_ms=11.13
+student-api  | 2026-11-25 07:28:20,924 INFO method=GET path=/health status=200 duration_ms=2.49
+student-api  | 2026-11-25 07:28:26,087 INFO method=GET path=/students status=200 duration_ms=3.13
